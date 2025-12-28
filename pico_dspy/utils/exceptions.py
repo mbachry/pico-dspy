@@ -10,7 +10,7 @@ class AdapterParseError(Exception):
     def __init__(
         self,
         adapter_name: str,
-        signature: 'Signature',
+        signature: type['Signature'],
         lm_response: str,
         message: str | None = None,
         parsed_result: dict | None = None,

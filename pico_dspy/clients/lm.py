@@ -1,14 +1,19 @@
 import logging
 from dataclasses import asdict
+from typing import Any
 
-from pico_dspy.clients.base_lm import BaseLM
 
-
-class LM(BaseLM):
-    def __init__(self, model: str, **kwargs):
+class LM:
+    def __init__(self, model: str, temperature=0.0, max_tokens=1000, **kwargs):
         model = model.replace('/', ':', 1)
         model = model.replace('gemini:', 'google-gla:')
-        super().__init__(model, 'chat', cache=False, **kwargs)
+        self.model = model
+        self.kwargs = dict(temperature=temperature, max_tokens=max_tokens, **kwargs)
+
+    def __call__(
+        self, prompt: str | None = None, messages: list[dict[str, Any]] | None = None, **kwargs
+    ) -> tuple[list[dict[str, Any] | str], dict]:
+        return self.forward(prompt=prompt, messages=messages, **kwargs)
 
     def forward(self, prompt=None, messages=None, **kwargs):
         from pydantic_ai import (
@@ -46,7 +51,8 @@ class LM(BaseLM):
 
         self._check_truncation(results)
 
-        return results
+        usage = asdict(results.usage) | {'total_tokens': results.usage.total_tokens}
+        return [p.content for p in results.parts if p.part_kind == 'text'], usage
 
     def _check_truncation(self, results):
         if results.finish_reason == "length":
@@ -57,7 +63,3 @@ class LM(BaseLM):
                 f"You may also consider increasing the temperature (currently {self.kwargs['temperature']}) "
                 " if the reason for truncation is repetition."
             )
-
-    def _process_lm_response(self, response, prompt, messages, **kwargs):
-        usage = asdict(response.usage) | {'total_tokens': response.usage.total_tokens}
-        return [p.content for p in response.parts if p.part_kind == 'text'], usage

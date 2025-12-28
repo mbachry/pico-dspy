@@ -11,7 +11,6 @@ import pydantic
 from pydantic import TypeAdapter
 from pydantic.fields import FieldInfo
 
-from pico_dspy.adapters.types.base_type import Type as DspyType
 from pico_dspy.signatures.utils import get_dspy_field_type
 
 
@@ -174,16 +173,7 @@ def parse_value(value, annotation):
         except (ValueError, SyntaxError):
             candidate = value
 
-    try:
-        return TypeAdapter(annotation).validate_python(candidate)
-    except pydantic.ValidationError as e:
-        if inspect.isclass(annotation) and issubclass(annotation, DspyType):
-            try:
-                # For dspy.Type, try parsing from the original value in case it has a custom parser
-                return TypeAdapter(annotation).validate_python(value)
-            except Exception:
-                raise e
-        raise
+    return TypeAdapter(annotation).validate_python(candidate)
 
 
 def get_annotation_name(annotation):
@@ -212,12 +202,6 @@ def get_field_description_string(fields: dict) -> str:
         field_message = f"{idx + 1}. `{k}`"
         field_message += f" ({get_annotation_name(v.annotation)})"
         desc = v.json_schema_extra["desc"] if v.json_schema_extra["desc"] != f"${{{k}}}" else ""
-
-        custom_types = DspyType.extract_custom_type_from_annotation(v.annotation)
-        for custom_type in custom_types:
-            if len(custom_type.description()) > 0:
-                desc += f"\n    Type description of {get_annotation_name(custom_type)}: {custom_type.description()}"
-
         field_message += f": {desc}"
         field_message += (
             f"\nConstraints: {v.json_schema_extra['constraints']}" if v.json_schema_extra.get("constraints") else ""

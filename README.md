@@ -33,6 +33,8 @@ Several features or limitations compared to `dspy`:
 
 * no loading and saving
 
+* no caching
+
 * no `dspy.configure`
 
 * tested only with gemini
@@ -72,3 +74,5 @@ print(result.get_lm_usage())
 ## Install
 
 `pip install pico-dspy`
+
+Install your preferred variant of `pydantic-ai`, eg. `pip install pydantic-ai-slim[google]`.
